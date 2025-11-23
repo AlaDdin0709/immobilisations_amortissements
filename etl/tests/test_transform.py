@@ -2,7 +2,8 @@ import sys
 import os
 
 sys.path.insert(0, os.path.join(os.getcwd(), 'src'))
-from transform import _to_date, _to_int, _to_decimal, transform_records
+from utils.process import to_date as _to_date, to_int as _to_int, to_decimal as _to_decimal
+from transform import transform_records
 
 
 def test_to_date_valid():
@@ -23,36 +24,38 @@ def test_to_int_and_decimal():
     assert _to_decimal(None) is None
 
 
-def test_transform_generates_surrogate_and_properties():
-    # record without ndeg_immobilisation -> should generate surrogate
+def test_transform_generates_surrogate():
+    # record without ndeg_immobilisation -> transform should generate surrogate
     recs = [
         {
-            'publication': 'CA 2017',
-            'collectivite': 'DEPARTEMENT',
-            'nature': '2135',
-            'date_d_acquisition': None,
-            'ndeg_immobilisation': None,
-            'valeur_d_acquisition': 1000.0
+            'fields': {
+                'publication': 'CA 2017',
+                'collectivite': 'DEPARTEMENT',
+                'nature': '2135',
+                'date_d_acquisition': None,
+                'ndeg_immobilisation': None,
+                'valeur_d_acquisition': 1000.0
+            }
         }
     ]
-    df, report = transform_records(recs)
+    df = transform_records(recs)
     assert len(df) == 1
     # Should have generated a non-empty ndeg_immobilisation
     assert df.loc[0, 'ndeg_immobilisation'] is not None
-    # properties should be a dict-like serialized to JSON later; here ensure column exists
-    assert 'properties' in df.columns
 
 
-def test_transform_handles_export_flat_records():
-    # Simulate export JSON flat record (no 'fields')
+def test_transform_handles_api_record_structure():
+    # Simulate API-style record with 'fields' wrapper
     recs = [
         {
-            'publication': '2022',
-            'collectivite': 'VILLE',
-            'ndeg_immobilisation': '1001',
-            'valeur_d_acquisition': 2000.5
+            'fields': {
+                'publication': '2022',
+                'collectivite': 'VILLE',
+                'ndeg_immobilisation': '1001',
+                'valeur_d_acquisition': 2000.5
+            }
         }
     ]
-    df, report = transform_records(recs)
+    df = transform_records(recs)
     assert df.loc[0, 'ndeg_immobilisation'] == '1001'
     assert df.loc[0, 'valeur_d_acquisition'] == 2000.5

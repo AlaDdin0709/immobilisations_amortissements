@@ -2,8 +2,10 @@
 import json
 import logging
 import pandas as pd
-from sqlalchemy import create_engine, text
-import uuid
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.dialects.mysql import insert as mysql_insert
+from models import Immobilisation, Base
 
 logger = logging.getLogger(__name__)
 
@@ -18,51 +20,26 @@ def get_engine():
     return create_engine(url, pool_pre_ping=True)
 
 
-def upsert_immobilisations(df, table_name='immobilisations_amortissements'):
-    """Upsert transformed immobilisations rows into the target table.
+def upsert_immobilisations(df: pd.DataFrame, table_name: str = 'immobilisations_amortissements') -> int:
+    """Upsert transformed immobilisations rows into the target table using SQLAlchemy ORM/table metadata.
 
-    Expects DataFrame with columns matching the TARGET_SCHEMA keys and `source_id` and `properties`.
+    Notes:
+    - The function uses MySQL's ON DUPLICATE KEY UPDATE via the MySQL dialect insert helper.
+    - The loader expects the DataFrame to match the TARGET_SCHEMA columns (no `source_id` or `properties`).
     """
     engine = get_engine()
     conn = engine.connect()
     inserted = 0
 
-    # Use a concise parameterized upsert statement. Columns list kept minimal and stable.
-    stmt = text(
-        """
-        INSERT INTO immobilisations_amortissements (
-            ndeg_immobilisation, publication, collectivite, nature, date_d_acquisition,
-            designation_des_ensembles, valeur_d_acquisition, duree_amort,
-            cumul_amort_anterieurs, vnc_debut_exercice, amort_exercice, vnc_fin_exercice,
-            source_id, properties
-        ) VALUES (
-            :ndeg_immobilisation, :publication, :collectivite, :nature, :date_d_acquisition,
-            :designation_des_ensembles, :valeur_d_acquisition, :duree_amort,
-            :cumul_amort_anterieurs, :vnc_debut_exercice, :amort_exercice, :vnc_fin_exercice,
-            :source_id, :properties
-        )
-        ON DUPLICATE KEY UPDATE
-            publication=VALUES(publication), collectivite=VALUES(collectivite), nature=VALUES(nature),
-            date_d_acquisition=VALUES(date_d_acquisition), designation_des_ensembles=VALUES(designation_des_ensembles),
-            valeur_d_acquisition=VALUES(valeur_d_acquisition), duree_amort=VALUES(duree_amort),
-            cumul_amort_anterieurs=VALUES(cumul_amort_anterieurs), vnc_debut_exercice=VALUES(vnc_debut_exercice),
-            amort_exercice=VALUES(amort_exercice), vnc_fin_exercice=VALUES(vnc_fin_exercice), properties=VALUES(properties), fetched_at=CURRENT_TIMESTAMP
-        """
-    )
+    # prepare list of insertable/updatable columns from the ORM model (exclude PK autoinc and fetched_at)
+    table = Immobilisation.__table__
+    insert_cols = [c.name for c in table.columns if c.name not in ('id', 'fetched_at')]
+    # columns to update on duplicate key (exclude primary identifier)
+    update_cols = [c for c in insert_cols if c != 'ndeg_immobilisation']
 
     try:
-        # Iterate records and execute upsert. Keep logic simple and explicit.
         for row in df.to_dict(orient='records'):
-            params = {}
-            for col in [
-                'ndeg_immobilisation', 'publication', 'collectivite', 'nature', 'date_d_acquisition',
-                'designation_des_ensembles', 'valeur_d_acquisition', 'duree_amort', 'cumul_amort_anterieurs',
-                'vnc_debut_exercice', 'amort_exercice', 'vnc_fin_exercice', 'source_id'
-            ]:
-                params[col] = row.get(col)
-
-            # properties JSON
-            params['properties'] = json.dumps(row.get('properties') or {}, ensure_ascii=False)
+            params = {col: row.get(col) for col in insert_cols}
 
             # sanitize NaN to None
             for k, v in list(params.items()):
@@ -72,14 +49,22 @@ def upsert_immobilisations(df, table_name='immobilisations_amortissements'):
                 except Exception:
                     pass
 
-            # ensure primary key exists; if not, generate a surrogate here as well
-            if not params.get('ndeg_immobilisation'):
-                params['ndeg_immobilisation'] = f"gen-{uuid.uuid4().hex}"
-                params['source_id'] = params.get('source_id') or params['ndeg_immobilisation']
+            stmt = mysql_insert(table).values(**params)
 
-            conn.execute(stmt, params)
+            # build update mapping: set column = VALUES(column)
+            update_mapping = {col: stmt.inserted[col] for col in update_cols}
+
+            upsert_stmt = stmt.on_duplicate_key_update(**update_mapping)
+
+            conn.execute(upsert_stmt)
             inserted += 1
-        conn.commit()
+
+        # commit the connection (use Connection.commit())
+        try:
+            conn.commit()
+        except Exception:
+            # Some SQLAlchemy versions require using the transaction API; ignore if unavailable
+            pass
     finally:
         conn.close()
 

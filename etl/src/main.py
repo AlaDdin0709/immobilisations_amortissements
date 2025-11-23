@@ -1,6 +1,7 @@
 ﻿import os
 import logging
-from extract.extract import fetch_all_records
+from extract.extract import fetch_records_in_batches
+from config import BATCH_SIZE
 from transform.transform import (
     transform_records,
     calculate_derived_fields,
@@ -34,13 +35,10 @@ def run_etl():
     logger.info("\n📥 STEP 1: EXTRACTION")
     logger.info("-" * 60)
     
-    records = fetch_all_records()
-    
-    if not records:
-        logger.error("❌ No records fetched - Aborting ETL")
-        return
-    
-    logger.info("✅ Extraction completed: %s records fetched", f"{len(records):,}")
+    # Stream extraction in batches; process each batch immediately.
+    total_extracted = 0
+
+    logger.info("📥 Streaming extraction in batches (batch_size=%s)", BATCH_SIZE)
     
     # ========================================
     # ÉTAPE 2: TRANSFORMATION
@@ -48,45 +46,34 @@ def run_etl():
     logger.info("\n🔄 STEP 2: TRANSFORMATION")
     logger.info("-" * 60)
     
-    df, report = transform_records(records)
-    logger.info("📊 Transform report: %s", report)
-    
-    # Apply derived fields and data quality flags (replacement for basic_cleaning)
-    df = calculate_derived_fields(df)
-    df = add_data_quality_flags(df)
-    
-    if df.empty:
-        logger.error("❌ No data to load after transformation - Aborting ETL")
-        return
-    
-    logger.info("✅ Transformation completed: %s rows, %s columns", f"{len(df):,}", len(df.columns))
-    
-    # ========================================
-    # ÉTAPE 3: CHARGEMENT
-    # ========================================
-    logger.info("\n📤 STEP 3: LOADING TO MYSQL")
-    logger.info("-" * 60)
-    
     table_name = os.getenv('ETL_TABLE', 'immobilisations_amortissements')
     logger.info("Target table: %s", table_name)
-    
-    rows_loaded = upsert_immobilisations(df, table_name=table_name)
-    
-    logger.info("✅ Loading completed: %s rows upserted", f"{rows_loaded:,}")
-    
-    # ========================================
-    # RÉSUMÉ
-    # ========================================
-    logger.info("\n%s", "=" * 60)
-    logger.info("🎉 ETL PIPELINE FINISHED SUCCESSFULLY")
-    logger.info("%s", "=" * 60)
-    logger.info("📊 Summary:")
-    logger.info("   - Records extracted   : %s", f"{len(records):,}")
-    logger.info("   - Records transformed : %s", f"{len(df):,}")
-    logger.info("   - Records loaded      : %s", f"{rows_loaded:,}")
-    logger.info("   - Target table        : %s", table_name)
-    logger.info("%s", "=" * 60)
 
+    total_loaded = 0
+    total_transformed = 0
+
+    for batch in fetch_records_in_batches(rows=BATCH_SIZE):
+        total_extracted += len(batch)
+        logger.info("Processing batch: %s records", f"{len(batch):,}")
+
+        df = transform_records(batch)
+        df = calculate_derived_fields(df)
+        df = add_data_quality_flags(df)
+
+        if df.empty:
+            logger.warning("Batch produced no rows after transformation - skipping")
+            continue
+        # count transformed rows and load
+        total_transformed += len(df)
+        loaded = upsert_immobilisations(df, table_name=table_name)
+        total_loaded += loaded
+        logger.info("Batch loaded: %s rows", f"{loaded:,}")
+
+    if total_extracted == 0:
+        logger.error("❌ No records fetched - Aborting ETL")
+        return
+
+    logger.info("✅ Extraction/Loading completed: %s records extracted, %s rows transformed, %s rows loaded", f"{total_extracted:,}", f"{total_transformed:,}", f"{total_loaded:,}")
 
 if __name__ == '__main__':
     try:

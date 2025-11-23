@@ -8,10 +8,14 @@ from load import upsert_immobilisations
 class DummyConn:
     def __init__(self):
         self.execs = []
-    def execute(self, stmt, params):
-        self.execs.append(params)
+
+    def execute(self, *args, **kwargs):
+        # record the call args for inspection
+        self.execs.append({'args': args, 'kwargs': kwargs})
+
     def commit(self):
         pass
+
     def close(self):
         pass
 
@@ -23,11 +27,10 @@ class DummyEngine:
         return self._conn
 
 
-def test_upsert_skips_missing_pk(monkeypatch):
-    # prepare dataframe with one valid and one missing PK
+def test_upsert_inserts_rows_with_pk(monkeypatch):
+    # loader expects ndeg_immobilisation to be present (transform guarantees it)
     rows = [
-        {'ndeg_immobilisation': 'K1', 'publication': '2020', 'properties': {}},
-        {'ndeg_immobilisation': None, 'publication': '2020', 'properties': {}}
+        {'ndeg_immobilisation': 'K1', 'publication': '2020', 'valeur_d_acquisition': 123.45}
     ]
     df = pd.DataFrame(rows)
 
@@ -40,7 +43,6 @@ def test_upsert_skips_missing_pk(monkeypatch):
 
     inserted = upsert_immobilisations(df, table_name='immobilisations_amortissements')
 
-    # only one row should be executed
+    # one upsert attempt should have been made
     assert inserted == 1
     assert len(conn.execs) == 1
-    assert conn.execs[0]['ndeg_immobilisation'] == 'K1'

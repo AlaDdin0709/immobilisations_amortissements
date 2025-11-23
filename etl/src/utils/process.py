@@ -1,3 +1,7 @@
+from typing import Any, Optional
+import datetime
+import pandas as pd
+
 # ============================================================================
 # TYPE CONVERSION FUNCTIONS
 # ============================================================================
@@ -7,19 +11,23 @@ def to_date(value: Any) -> Optional[datetime.date]:
     if value in (None, '') or pd.isna(value):
         return None
     
-    if isinstance(value, datetime):
-        return value.date()
-    
+    # If already a date or datetime, normalize to date
+    if isinstance(value, datetime.date):
+        # datetime.date is a superclass of datetime.datetime, so check for datetime first
+        if isinstance(value, datetime.datetime):
+            return value.date()
+        return value
+
     try:
         # Try ISO format first
-        return datetime.strptime(str(value)[:10], '%Y-%m-%d').date()
+        return datetime.datetime.strptime(str(value)[:10], '%Y-%m-%d').date()
     except (ValueError, TypeError):
         pass
     
     # Try additional formats
     for fmt in ['%d/%m/%Y', '%m/%d/%Y', '%Y%m%d']:
         try:
-            return datetime.strptime(str(value), fmt).date()
+            return datetime.datetime.strptime(str(value), fmt).date()
         except (ValueError, TypeError):
             continue
     

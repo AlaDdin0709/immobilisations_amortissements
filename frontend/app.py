@@ -20,7 +20,8 @@ def get_engine():
 
 try:
     engine = get_engine()
-    df = pd.read_sql('SELECT * FROM paris_dataset LIMIT 10', engine)
+    # Show a sample from the main ETL target table
+    df = pd.read_sql('SELECT * FROM immobilisations_amortissements LIMIT 10', engine)
     st.write('Aperçu des données')
     st.dataframe(df)
 except Exception as e:
