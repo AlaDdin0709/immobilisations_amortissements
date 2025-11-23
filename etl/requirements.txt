@@ -1,0 +1,8 @@
+requests
+pandas
+sqlalchemy
+pymysql
+python-dotenv
+cryptography
+pytest
+pytest-cov
