@@ -1,12 +1,12 @@
 ﻿import os
 import logging
-from extraction.extract import fetch_all_records
-from transformation.transform import (
+from extract.extract import fetch_all_records
+from transform.transform import (
     transform_records,
     calculate_derived_fields,
     add_data_quality_flags,
 )
-from loading.load import upsert_immobilisations
+from load.load import upsert_immobilisations
 
 # Logging configuration (controlled via LOG_LEVEL env)
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
