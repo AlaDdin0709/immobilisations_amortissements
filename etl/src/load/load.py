@@ -21,52 +21,63 @@ def get_engine():
 
 
 def upsert_immobilisations(df: pd.DataFrame, table_name: str = 'immobilisations_amortissements') -> int:
-    """Upsert transformed immobilisations rows into the target table using SQLAlchemy ORM/table metadata.
+    """Load transformed immobilisations rows into the target table in append-only mode.
 
-    Notes:
-    - The function uses MySQL's ON DUPLICATE KEY UPDATE via the MySQL dialect insert helper.
-    - The loader expects the DataFrame to match the TARGET_SCHEMA columns (no `source_id` or `properties`).
+    Behavior changes (compared to prior upsert):
+    - Ensures the target table exists by running metadata.create_all()
+    - Performs bulk INSERT (append) of rows; duplicates are allowed at the DB level
+      (the unique constraint on `ndeg_immobilisation` was removed in the ORM model).
+
+    This keeps the public API name `upsert_immobilisations` so callers (e.g., `main.py`)
+    don't need to be changed.
     """
     engine = get_engine()
     conn = engine.connect()
     inserted = 0
 
-    # prepare list of insertable/updatable columns from the ORM model (exclude PK autoinc and fetched_at)
+    # ensure table exists according to ORM metadata
+    try:
+        Base.metadata.create_all(engine)
+    except Exception:
+        logger.exception('Failed to ensure target table exists')
+
     table = Immobilisation.__table__
     insert_cols = [c.name for c in table.columns if c.name not in ('id', 'fetched_at')]
-    # columns to update on duplicate key (exclude primary identifier)
-    update_cols = [c for c in insert_cols if c != 'ndeg_immobilisation']
 
+    # Prepare rows for bulk insert
+    records = []
+    for row in df.to_dict(orient='records'):
+        params = {col: row.get(col) for col in insert_cols}
+        # sanitize NaN to None
+        for k, v in list(params.items()):
+            try:
+                if pd.isna(v):
+                    params[k] = None
+            except Exception:
+                pass
+        records.append(params)
+
+    if not records:
+        logger.info('No records to insert into %s', table_name)
+        return 0
+
+    trans = conn.begin()
     try:
-        for row in df.to_dict(orient='records'):
-            params = {col: row.get(col) for col in insert_cols}
-
-            # sanitize NaN to None
-            for k, v in list(params.items()):
-                try:
-                    if pd.isna(v):
-                        params[k] = None
-                except Exception:
-                    pass
-
-            stmt = mysql_insert(table).values(**params)
-
-            # build update mapping: set column = VALUES(column)
-            update_mapping = {col: stmt.inserted[col] for col in update_cols}
-
-            upsert_stmt = stmt.on_duplicate_key_update(**update_mapping)
-
-            conn.execute(upsert_stmt)
-            inserted += 1
-
-        # commit the connection (use Connection.commit())
+        # bulk insert using core table insert
+        result = conn.execute(table.insert(), records)
         try:
-            conn.commit()
+            trans.commit()
         except Exception:
-            # Some SQLAlchemy versions require using the transaction API; ignore if unavailable
+            # commit can be no-op for some engines; ignore
             pass
+        # result.rowcount may be -1 for some drivers; use len(records) as best-effort
+        inserted = len(records)
+    except Exception:
+        trans.rollback()
+        logger.exception('Bulk insert failed')
+        raise
     finally:
         conn.close()
 
-    logger.info('Upserted %s rows into %s', inserted, table_name)
+    logger.info('Inserted %s rows into %s', inserted, table_name)
     return inserted
