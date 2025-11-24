@@ -11,10 +11,31 @@ services:
       - mysql-data:/var/lib/mysql
     ports:
       - "3306:3306"
+    networks:
+      - app-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       retries: 10
+
+  db_init:
+    image: mysql:8.0
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      INIT_SQL_PATH: /init/init.sql
+    volumes:
+      - ./mysql/init.sql:/init/init.sql:ro
+      - ./mysql/run-init.sh:/init/run-init.sh:ro
+    entrypoint: ["/bin/bash", "/init/run-init.sh"]
+    networks:
+      - app-network
 
   etl:
     build: ./etl
@@ -30,6 +51,8 @@ services:
       - DATASET_API_URL=${DATASET_API_URL}
     volumes:
       - ./etl:/app
+    networks:
+      - app-network
     command: ["/app/entrypoint.sh"]
 
   superset:
@@ -43,9 +66,20 @@ services:
       - SUPERSET_ADMIN_USER=${SUPERSET_ADMIN_USER}
       - SUPERSET_ADMIN_PASSWORD=${SUPERSET_ADMIN_PASSWORD}
       - SUPERSET_SECRET_KEY=${SUPERSET_SECRET_KEY:-}
+      # Pass MySQL credentials from .env into the Superset container so init script can patch/import correctly
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     volumes:
       - ./superset/superset_config.py:/app/pythonpath/superset_config.py:ro
-      - ./superset/init-superset.sh:/app/init-superset.sh:ro
+      - ./superset/dashboards:/app/dashboards
+      # init script is baked into the image at /app/docker/docker-init.sh by the Dockerfile
+    entrypoint: ["/app/docker/docker-init.sh"]
+
+    networks:
+      - app-network
 
   streamlit:
     build: ./frontend
@@ -59,6 +93,9 @@ services:
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - SUPERSET_HOST=http://superset:8088
+    networks:
+      - app-network
 
   adminer:
     image: adminer
@@ -66,6 +103,12 @@ services:
       - "8081:8080"
     depends_on:
       - mysql
+    networks:
+      - app-network
 
 volumes:
   mysql-data:
+
+networks:
+  app-network:
+    driver: bridge

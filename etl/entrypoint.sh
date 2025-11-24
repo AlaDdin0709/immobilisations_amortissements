@@ -6,5 +6,5 @@ set -e
 if [ "$#" -gt 0 ]; then
 	exec python -u "$@"
 else
-	exec python -u src/main/main.py
+	exec python -u src/main.py
 fi
