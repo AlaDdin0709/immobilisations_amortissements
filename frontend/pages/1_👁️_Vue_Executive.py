@@ -4,8 +4,8 @@ from pathlib import Path
 
 # Configuration de la page
 st.set_page_config(
-    page_title="Analyse Temporelle - Dashboards",
-    page_icon="📅",
+    page_title="Vue Exécutive - Dashboards",
+    page_icon="👁️",
     layout="wide"
 )
 
@@ -41,7 +41,7 @@ st.markdown("""
         padding: 2rem;
         margin-bottom: 2rem;
         box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        border-left: 6px solid #764ba2;
+        border-left: 6px solid #667eea;
     }
     
     .dashboard-header h1 {
@@ -95,7 +95,7 @@ st.markdown("""
     }
     
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
     }
     
@@ -111,38 +111,43 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Chemin vers les dashboards
-DASHBOARD_DIR = Path(__file__).parent.parent / "Dashboards" / "ANALYSE TEMPORELLE"
+DASHBOARD_DIR = Path(__file__).parent.parent / "Dashboards" / "VUE EXÉCUTIVE"
 
 # Informations sur le dashboard
 DASHBOARD_INFO = {
-    "icon": "📅",
-    "color": "#764ba2",
-    "description": "Évolution temporelle et analyse des tendances",
+    "icon": "👁️",
+    "color": "#667eea",
+    "description": "Vue d'ensemble stratégique des actifs immobilisés",
     "charts": [
         {
             "title": "Dashboard Complet",
-            "file": "ANALYSE TEMPORELLE dashboard.jpg",
+            "file": "VUE EXÉCUTIVE dashboard.jpg",
             "description": "Vue d'ensemble complète du tableau de bord"
         },
         {
+            "title": "Nombre Total d'Actifs",
+            "file": "nombre-total-d-actifs.jpg",
+            "description": "Compteur du nombre total d'immobilisations"
+        },
+        {
             "title": "Acquisitions par Année",
-            "file": "acquisitions-par-annee.jpg",
-            "description": "Évolution annuelle des acquisitions"
+            "file": "totale-d-acquisition-par-annee.jpg",
+            "description": "Évolution des acquisitions au fil des années"
         },
         {
-            "title": "Acquisitions par Trimestre",
-            "file": "acquisitions-par-trimestre.jpg",
-            "description": "Répartition trimestrielle des acquisitions"
+            "title": "Répartition par Nature",
+            "file": "repartition-par-nature.jpg",
+            "description": "Distribution des actifs selon leur nature"
         },
         {
-            "title": "Acquisitions par Mois",
-            "file": "nombre-dacquisitions-par-mois-annee.jpg",
-            "description": "Distribution mensuelle des acquisitions par année"
+            "title": "Top 10 par Valeur",
+            "file": "top-10-immobilisations-par-valeur.jpg",
+            "description": "Les 10 immobilisations les plus valorisées"
         },
         {
-            "title": "Amortissement Cumulé",
-            "file": "amortissement-cumule.jpg",
-            "description": "Évolution de l'amortissement cumulé"
+            "title": "Valeur par Collectivité",
+            "file": "valleur-dacquisition-par-collectivite.jpg",
+            "description": "Répartition de la valeur d'acquisition par collectivité"
         }
     ]
 }
@@ -162,7 +167,7 @@ def load_image(image_path):
 # Header
 st.markdown(f"""
 <div class="dashboard-header">
-    <h1>{DASHBOARD_INFO['icon']} Analyse Temporelle</h1>
+    <h1>{DASHBOARD_INFO['icon']} Vue Exécutive</h1>
     <p style="color: #64748b; font-size: 1.1rem; margin-top: 0.5rem;">{DASHBOARD_INFO['description']}</p>
 </div>
 """, unsafe_allow_html=True)
@@ -179,7 +184,7 @@ st.markdown("---")
 
 if view_mode == "📊 Dashboard Complet":
     # Affichage du dashboard complet
-    dashboard_file = DASHBOARD_DIR / "ANALYSE TEMPORELLE dashboard.jpg"
+    dashboard_file = DASHBOARD_DIR / "VUE EXÉCUTIVE dashboard.jpg"
     dashboard_img = load_image(dashboard_file)
     
     if dashboard_img:
@@ -191,13 +196,13 @@ if view_mode == "📊 Dashboard Complet":
             btn = st.download_button(
                 label="📥 Télécharger le Dashboard",
                 data=file,
-                file_name="analyse_temporelle_dashboard.jpg",
+                file_name="vue_executive_dashboard.jpg",
                 mime="image/jpeg"
             )
     else:
         st.warning("Le dashboard complet n'est pas disponible actuellement.")
 
-elif view_mode == "📈 Graphiques Détaillés":
+else:
     # Affichage des graphiques individuels avec onglets
     st.markdown("### 📈 Graphiques Détaillés")
     
@@ -237,8 +242,6 @@ elif view_mode == "📈 Graphiques Détaillés":
             else:
                 st.warning(f"Le graphique '{chart['title']}' n'est pas disponible actuellement.")
 
-
-
 # Informations complémentaires
 st.markdown("---")
 st.markdown("### 💡 À propos de ce dashboard")
@@ -247,29 +250,27 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.info("""
-    **Analyse Temporelle** offre une vision détaillée de l'évolution dans le temps :
+    **Vue Exécutive** offre une vision stratégique complète de vos actifs immobilisés :
     
-    - 📅 **Tendances annuelles** : Évolution des acquisitions année après année
-    - 📊 **Saisonnalité** : Identification des patterns trimestriels et mensuels
-    - 💹 **Amortissement** : Suivi de l'amortissement cumulé
-    - 🔍 **Granularité** : Analyse du niveau annuel au niveau mensuel
+    - 📊 **Indicateurs clés** : Nombre total d'actifs, valeur globale
+    - 📈 **Tendances** : Évolution des acquisitions dans le temps
+    - 🎯 **Répartition** : Distribution par nature et collectivité
+    - 🏆 **Top performers** : Identification des actifs les plus valorisés
     """)
 
 with col2:
     st.success("""
-    **Formats disponibles :**
-    - Images haute résolution (JPEG)
-    - Dashboard complet
-    - Graphiques individuels
-    - Téléchargement disponible
+    **Sources de données :**
+    - Base de données : `immobilisations_amortissements`
+    - Période couverte : Historique complet
+    - Mise à jour : Temps réel
+    - Exports disponibles : JPEG, PDF
     """)
 
 # Footer
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: white; padding: 1rem;">
-    <p style="font-size: 0.9rem;">📅 Analyse Temporelle - Tableau de Bord Immobilisations</p>
+    <p style="font-size: 0.9rem;">📊 Vue Exécutive - Tableau de Bord Immobilisations</p>
 </div>
 """, unsafe_allow_html=True)
-
-

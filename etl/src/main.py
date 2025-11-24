@@ -26,24 +26,24 @@ def run_etl():
     - Chargement dans MySQL
     """
     logger.info("%s", "=" * 60)
-    logger.info("🚀 Starting ETL Pipeline")
+    logger.info("Starting ETL Pipeline")
     logger.info("%s", "=" * 60)
     
     # ========================================
     # ÉTAPE 1: EXTRACTION
     # ========================================
-    logger.info("\n📥 STEP 1: EXTRACTION")
+    logger.info("\nSTEP 1: EXTRACTION")
     logger.info("-" * 60)
     
     # Stream extraction in batches; process each batch immediately.
     total_extracted = 0
 
-    logger.info("📥 Streaming extraction in batches (batch_size=%s)", BATCH_SIZE)
+    logger.info("Streaming extraction in batches (batch_size=%s)", BATCH_SIZE)
     
     # ========================================
     # ÉTAPE 2: TRANSFORMATION
     # ========================================
-    logger.info("\n🔄 STEP 2: TRANSFORMATION")
+    logger.info("\nSTEP 2: TRANSFORMATION")
     logger.info("-" * 60)
     
     table_name = os.getenv('ETL_TABLE', 'immobilisations_amortissements')
@@ -70,16 +70,16 @@ def run_etl():
         logger.info("Batch loaded: %s rows", f"{loaded:,}")
 
     if total_extracted == 0:
-        logger.error("❌ No records fetched - Aborting ETL")
+        logger.error("ERROR: No records fetched - Aborting ETL")
         return
 
-    logger.info("✅ Extraction/Loading completed: %s records extracted, %s rows transformed, %s rows loaded", f"{total_extracted:,}", f"{total_transformed:,}", f"{total_loaded:,}")
+    logger.info("SUCCESS: Extraction/Loading completed: %s records extracted, %s rows transformed, %s rows loaded", f"{total_extracted:,}", f"{total_transformed:,}", f"{total_loaded:,}")
 
 if __name__ == '__main__':
     try:
         run_etl()
-        logger.info("\n✅ ETL process exited cleanly")
+        logger.info("\nETL process exited cleanly")
         exit(0)
     except Exception as e:
-        logger.exception("\n❌ FATAL ERROR: %s", e)
+        logger.exception("\nFATAL ERROR: %s", e)
         exit(1)

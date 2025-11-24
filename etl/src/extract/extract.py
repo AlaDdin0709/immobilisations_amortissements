@@ -16,7 +16,7 @@ def fetch_records_in_batches(rows: int = 1000):
     This allows the ETL to transform & load batches incrementally instead of
     waiting for the full extraction to finish.
     """
-    logger.info("🚀 Démarrage de l'extraction par pagination (streaming par batches)...")
+    logger.info("Starting extraction by pagination (streaming by batches)...")
 
     start = 0
 
@@ -47,7 +47,7 @@ def fetch_records_in_batches(rows: int = 1000):
             # fallback: some endpoints may return list
             records = payload
         else:
-            logger.warning('⚠️ Format inattendu pour la page: %s', type(payload))
+            logger.warning('Unexpected format for page: %s', type(payload))
 
         logger.info('Page start=%s returned %s records', start, len(records))
 
