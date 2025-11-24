@@ -1,23 +1,23 @@
-# 📊 Plateforme d'Analyse des Immobilisations et Amortissements
+# Plateforme d'Analyse des Immobilisations et Amortissements
 
-## 📑 Table des Matières
+## Table des Matières
 
-1. [Introduction](#-introduction)
-2. [Structure du Projet](#-structure-du-projet)
+1. [Introduction](#introduction)
+2. [Structure du Projet](#structure-du-projet)
 3. [Services Docker Compose](#services-docker-compose)
 4. [Stack Technique](#stack-technique)
-5. [Pipeline ETL Détaillé](#-pipeline-etl-détaillé)
-6. [Interface Streamlit](#-interface-streamlit)
-7. [Installation et Démarrage](#-installation-et-démarrage)
+5. [Pipeline ETL Détaillé](#pipeline-etl-détaillé)
+6. [Interface Streamlit](#interface-streamlit)
+7. [Installation et Démarrage](#installation-et-démarrage)
 8. [Accès aux Services](#accès-aux-services)
-9. [Conformité 12-Factor App](#-conformité-12-factor-app)
-10. [Ressources](#-ressources)
+9. [Conformité 12-Factor App](#conformité-12-factor-app)
+10. [Ressources](#ressources)
 
 ---
 
-## 🎯 Introduction
+## Introduction
 
-Cette plateforme d'analyse automatisée permet la visualisation et le suivi des immobilisations et amortissements à partir des données OpenData Paris. Le système extrait, transforme et charge (ETL) automatiquement les données publiques, puis les présente via une interface Streamlit intuitive avec des tableaux de bord interactifs générés par Apache Superset.
+Cette plateforme d'analyse automatisée permet la visualisation et le suivi des immobilisations et amortissements à partir des données OpenData Paris. Le système extrait, transforme et charge (ETL) automatiquement les données publiques, puis les présente via une interface Streamlit intuitive avec des tableaux de bord interactifs générés automatiquement dans Apache Superset. Les dashboards Superset sont importés et configurés de manière automatique au démarrage, offrant des visualisations interactives accessibles directement depuis l'interface web.
 
 ### Objectifs du Projet
 
@@ -28,16 +28,16 @@ Cette plateforme d'analyse automatisée permet la visualisation et le suivi des 
 
 ### Fonctionnalités Principales
 
-✅ **ETL Automatisé** : Extraction par batch depuis l'API OpenData Paris (1000 enregistrements/batch)  
-✅ **Transformation Avancée** : Calcul automatique des champs dérivés (taux d'amortissement, âge, valeur restante)  
-✅ **Base de Données MySQL** : Stockage optimisé avec indexes et contraintes  
-✅ **Dashboards Superset** : Visualisations avancées (acquisitions, répartitions, analyses temporelles)  
-✅ **Interface Streamlit** : Navigation intuitive avec 3 pages (Accueil, Vue Executive, Analyse Temporelle)  
-✅ **Mode Statique** : Affichage des dashboards via images JPG (pas de requêtes SQL en temps réel)
+- **ETL Automatisé** : Extraction par batch depuis l'API OpenData Paris (1000 enregistrements/batch)  
+- **Transformation Avancée** : Calcul automatique des champs dérivés (taux d'amortissement, âge, valeur restante)  
+- **Base de Données MySQL** : Stockage optimisé avec indexes et contraintes  
+- **Dashboards Superset** : Visualisations avancées (acquisitions, répartitions, analyses temporelles)  
+- **Interface Streamlit** : Navigation intuitive avec 3 pages (Accueil, Vue Executive, Analyse Temporelle)  
+- **Mode Statique** : Affichage des dashboards via images JPG (pas de requêtes SQL en temps réel)
 
 ---
 
-## 📁 Structure du Projet
+## Structure du Projet
 
 ```
 immobilisations_amortissements/
@@ -47,7 +47,7 @@ immobilisations_amortissements/
 ├── .gitignore                  # Fichiers exclus du versioning
 ├── README.md                   # Documentation (ce fichier)
 │
-├── etl/                        # 🔧 Pipeline ETL
+├── etl/                        # Pipeline ETL
 │   ├── Dockerfile              # Image Python pour ETL
 │   ├── requirements.txt        # Dépendances Python
 │   ├── entrypoint.sh           # Script de démarrage
@@ -63,11 +63,11 @@ immobilisations_amortissements/
 │       └── utils/
 │           └── process.py      # Utilitaires de conversion
 │
-├── mysql/                      # 🗄️ Base de Données
+├── mysql/                      # Base de Données
 │   ├── init.sql                # Schéma et initialisation
 │   └── run-init.sh             # Script d'initialisation
 │
-├── superset/                   # 📈 Business Intelligence
+├── superset/                   # Business Intelligence
 │   ├── Dockerfile              # Image Superset personnalisée
 │   ├── superset_config.py      # Configuration Superset
 │   ├── init-superset.sh        # Initialisation automatique
@@ -75,13 +75,13 @@ immobilisations_amortissements/
 │       ├── dashboard_executive.json
 │       └── dashboard_temporel.json
 │
-├── frontend/                   # 🖥️ Interface Utilisateur
+├── frontend/                   # Interface Utilisateur
 │   ├── Dockerfile              # Image Streamlit
 │   ├── requirements.txt        # Dépendances légères
 │   ├── Home.py                 # Page d'accueil
 │   ├── pages/
-│   │   ├── 1_👁️_Vue_Executive.py
-│   │   └── 2_📅_Analyse_Temporelle.py
+│   │   ├── 1_Vue_Executive.py
+│   │   └── 2_Analyse_Temporelle.py
 │   └── Dashboards/             # Images statiques des dashboards
 │       ├── nombre-total-d-actifs.jpg
 │       ├── totale-d-acquisition-par-annee.jpg
@@ -95,7 +95,7 @@ immobilisations_amortissements/
 │       ├── VUE EXÉCUTIVE dashboard.jpg
 │       └── ANALYSE TEMPORELLE dashboard.jpg
 │
-└── notebooks/                  # 📓 Jupyter notebooks (analyse ad-hoc)
+└── notebooks/                  # Jupyter notebooks (analyse ad-hoc)
 ```
 
 ---
@@ -130,16 +130,16 @@ immobilisations_amortissements/
 
 ---
 
-## 🔄 Pipeline ETL Détaillé
+## Pipeline ETL Détaillé
 
-### 1️⃣ Extraction
+### 1. Extraction
 
 **Source** : API OpenData Paris  
 **Méthode** : Pagination automatique avec générateur Python  
 **Batch Size** : 1000 enregistrements par requête  
 **Gestion d'erreurs** : Retry sur timeout, fallback pour réponses liste
 
-### 2️⃣ Transformation
+### 2. Transformation
 
 **Schéma Cible** : 12 colonnes typées
 - `ndeg_immobilisation` (string, PK)
@@ -158,7 +158,7 @@ immobilisations_amortissements/
 - `amortissement_total` : Montant total amorti à ce jour
 - `pct_valeur_restante` : Pourcentage de valeur résiduelle
 
-### 3️⃣ Chargement
+### 3. Chargement
 
 **Stratégie** : UPSERT (INSERT ... ON DUPLICATE KEY UPDATE)  
 **Transaction** : Rollback automatique en cas d'erreur  
@@ -167,15 +167,15 @@ immobilisations_amortissements/
 
 ---
 
-## 🎨 Interface Streamlit
+## Interface Streamlit
 
 ### Architecture Multi-Pages
 
-#### 🏠 **Page d'Accueil** (`Home.py`)
+#### Page d'Accueil (`Home.py`)
 - **Statistiques** : Compteurs d'images par dashboard
 - **Navigation** : Cards cliquables vers les dashboards
 
-#### 👁️ **Vue Executive** (`1_👁️_Vue_Executive.py`)
+#### Vue Executive (`1_Vue_Executive.py`)
 - **Mode 1** : Dashboard complet (image unique)
 - **Mode 2** : Graphiques détaillés en onglets
   - Nombre Total d'Actifs
@@ -185,7 +185,7 @@ immobilisations_amortissements/
   - Valeur d'Acquisition par Collectivité
 - **Fonctionnalités** : Téléchargement individuel des images
 
-#### 📅 **Analyse Temporelle** (`2_📅_Analyse_Temporelle.py`)
+#### Analyse Temporelle (`2_Analyse_Temporelle.py`)
 - **Mode 1** : Dashboard temporel complet
 - **Mode 2** : Analyses détaillées
   - Acquisitions par Année
@@ -195,7 +195,7 @@ immobilisations_amortissements/
 
 ---
 
-## 🚀 Installation et Démarrage
+## Installation et Démarrage
 
 ### Prérequis
 
@@ -206,13 +206,13 @@ immobilisations_amortissements/
 
 ### Configuration Initiale
 
-1️⃣ **Cloner le repository**
+**1. Cloner le repository**
 ```powershell
 git clone https://github.com/AlaDdin0709/immobilisations_amortissements.git
 cd immobilisations_amortissements
 ```
 
-2️⃣ **Configurer les variables d'environnement**
+**2. Configurer les variables d'environnement**
 ```powershell
 # Copier le template
 cp .env.example .env
@@ -233,7 +233,7 @@ SUPERSET_SECRET_KEY=VotreCleSecrete789ABC
 DATASET_API_URL=https://opendata.paris.fr/api/records/1.0/search/?dataset=immobilisations-incorporelles-amortissements-reprise
 ```
 
-3️⃣ **Lancer la plateforme**
+**3. Lancer la plateforme**
 ```powershell
 # Build et démarrage de tous les services
 docker-compose up -d --build
@@ -266,26 +266,26 @@ Docker Compose gère automatiquement les dépendances :
 
 ---
 
-## ✅ Conformité 12-Factor App
+## Conformité 12-Factor App
 
 | Facteur | Statut | Implémentation |
 |---------|--------|----------------|
-| **I. Codebase** | ✅ | Repository Git unique, branche `restore-V3` |
-| **II. Dependencies** | ✅ | `requirements.txt` pour Python, images Docker versionnées |
-| **III. Config** | ✅ | Variables d'environnement via `.env` (12-factor compliant) |
-| **IV. Backing Services** | ✅ | MySQL, Superset traités comme ressources attachables |
-| **V. Build/Release/Run** | ✅ | Docker build → Docker Compose up (séparation stricte) |
-| **VI. Processes** | ✅ | Services stateless, état en base MySQL |
-| **VII. Port Binding** | ✅ | Chaque service expose son propre port |
-| **VIII. Concurrency** | ✅ | ETL single-process, scalable via Docker replicas |
-| **IX. Disposability** | ✅ | Healthchecks, graceful shutdown, entrypoints configurés |
-| **X. Dev/Prod Parity** | ✅ | Docker garantit environnements identiques |
-| **XI. Logs** | ✅ | Logs stdout/stderr, pas de centralisation externe |
-| **XII. Admin Processes** | ✅ | Scripts run-init.sh, entrypoint.sh pour tâches admin |
+| **I. Codebase** | OUI | Repository Git unique, branche `restore-V3` |
+| **II. Dependencies** | OUI | `requirements.txt` pour Python, images Docker versionnées |
+| **III. Config** | OUI | Variables d'environnement via `.env` (12-factor compliant) |
+| **IV. Backing Services** | OUI | MySQL, Superset traités comme ressources attachables |
+| **V. Build/Release/Run** | OUI | Docker build → Docker Compose up (séparation stricte) |
+| **VI. Processes** | OUI | Services stateless, état en base MySQL |
+| **VII. Port Binding** | OUI | Chaque service expose son propre port |
+| **VIII. Concurrency** | OUI | ETL single-process, scalable via Docker replicas |
+| **IX. Disposability** | OUI | Healthchecks, graceful shutdown, entrypoints configurés |
+| **X. Dev/Prod Parity** | OUI | Docker garantit environnements identiques |
+| **XI. Logs** | OUI | Logs stdout/stderr, pas de centralisation externe |
+| **XII. Admin Processes** | OUI | Scripts run-init.sh, entrypoint.sh pour tâches admin |
 
 ---
 
-## 📚 Ressources
+## Ressources
 
 ### Documentation Externe
 
@@ -302,7 +302,7 @@ Docker Compose gère automatiquement les dépendances :
 
 ---
 
-## 📄 Licence
+## Licence
 
 Ce projet est destiné à des fins éducatives et d'analyse de données publiques.
 
