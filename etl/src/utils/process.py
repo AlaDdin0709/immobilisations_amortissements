@@ -1,30 +1,43 @@
+"""Fonctions utilitaires pour la conversion de types de données.
+
+Ce module fournit des fonctions robustes pour convertir les valeurs
+en types appropriés (date, int, decimal, string, text).
+"""
 from typing import Any, Optional
 import datetime
 import pandas as pd
 
 # ============================================================================
-# TYPE CONVERSION FUNCTIONS
+# FONCTIONS DE CONVERSION DE TYPES
 # ============================================================================
 
 def to_date(value: Any) -> Optional[datetime.date]:
-    """Convert value to date, handling various formats."""
+    """
+    Convertit une valeur en date, gère plusieurs formats.
+    
+    Args:
+        value: Valeur à convertir (string, datetime, date, etc.)
+        
+    Returns:
+        datetime.date ou None si conversion impossible
+    """
     if value in (None, '') or pd.isna(value):
         return None
     
-    # If already a date or datetime, normalize to date
+    # Si déjà une date ou datetime, normaliser en date
     if isinstance(value, datetime.date):
-        # datetime.date is a superclass of datetime.datetime, so check for datetime first
+        # datetime.date est la classe parente de datetime.datetime
         if isinstance(value, datetime.datetime):
             return value.date()
         return value
 
     try:
-        # Try ISO format first
+        # Essayer le format ISO d'abord (YYYY-MM-DD)
         return datetime.datetime.strptime(str(value)[:10], '%Y-%m-%d').date()
     except (ValueError, TypeError):
         pass
     
-    # Try additional formats
+    # Essayer des formats additionnels
     for fmt in ['%d/%m/%Y', '%m/%d/%Y', '%Y%m%d']:
         try:
             return datetime.datetime.strptime(str(value), fmt).date()
@@ -35,7 +48,15 @@ def to_date(value: Any) -> Optional[datetime.date]:
 
 
 def to_int(value: Any) -> Optional[int]:
-    """Convert value to integer, handling missing values."""
+    """
+    Convertit une valeur en entier, gère les valeurs manquantes.
+    
+    Args:
+        value: Valeur à convertir
+        
+    Returns:
+        int ou None si conversion impossible
+    """
     if value in (None, '') or pd.isna(value):
         return None
     
@@ -46,12 +67,20 @@ def to_int(value: Any) -> Optional[int]:
 
 
 def to_decimal(value: Any) -> Optional[float]:
-    """Convert value to decimal/float, handling missing values."""
+    """
+    Convertit une valeur en décimal/float, gère les valeurs manquantes.
+    
+    Args:
+        value: Valeur à convertir
+        
+    Returns:
+        float ou None si conversion impossible
+    """
     if value in (None, '') or pd.isna(value):
         return None
     
     try:
-        # Handle string numbers with commas or spaces
+        # Gérer les nombres avec virgules ou espaces
         if isinstance(value, str):
             value = value.replace(',', '.').replace(' ', '')
         return float(value)
@@ -60,7 +89,15 @@ def to_decimal(value: Any) -> Optional[float]:
 
 
 def to_string(value: Any) -> Optional[str]:
-    """Convert value to string, normalizing whitespace."""
+    """
+    Convertit une valeur en chaîne, normalise les espaces.
+    
+    Args:
+        value: Valeur à convertir
+        
+    Returns:
+        str ou None si valeur vide
+    """
     if value is None or pd.isna(value):
         return None
     
@@ -69,11 +106,19 @@ def to_string(value: Any) -> Optional[str]:
 
 
 def to_text(value: Any) -> Optional[str]:
-    """Convert value to text, preserving formatting."""
+    """
+    Convertit une valeur en texte, préserve le formatage.
+    
+    Args:
+        value: Valeur à convertir
+        
+    Returns:
+        str ou None si valeur vide
+    """
     if value is None or pd.isna(value):
         return None
     
     result = str(value)
-    # Normalize unicode and remove excessive whitespace
+    # Normaliser l'unicode et supprimer les espaces excessifs
     result = ' '.join(result.split())
     return result if result else None

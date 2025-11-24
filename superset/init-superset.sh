@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -e
 
 # --- Check environment variables ---
@@ -41,7 +41,7 @@ if [ -d /app/dashboards ]; then
             cp "$zipfile" "${zipfile}.bak"
         fi
 
-        # Patch the database URI inside the ZIP to use current MySQL env (defaults to admin:admin)
+        # Patch the database URI inside the ZIP to use current MySQL env 
         echo "Patching DB URI inside ZIP (if present)..."
         python - "$zipfile" <<'PY'
 import sys, zipfile, tempfile, os, shutil, re

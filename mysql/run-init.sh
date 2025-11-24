@@ -14,7 +14,6 @@ done
 echo "MySQL is up — applying ${INIT_SQL_PATH} (if present)"
 
 if [ -f "${INIT_SQL_PATH}" ]; then
-  # Use MYSQL_PWD to avoid exposing password in ps output
   export MYSQL_PWD="${MYSQL_PASSWORD}"
   mysql -h "${MYSQL_HOST}" -P "${MYSQL_PORT}" -u "${MYSQL_USER}" < "${INIT_SQL_PATH}" || {
     echo "Warning: mysql client returned non-zero status while applying init.sql" >&2

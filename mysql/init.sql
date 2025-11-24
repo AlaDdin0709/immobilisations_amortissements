@@ -2,9 +2,6 @@
 CREATE DATABASE IF NOT EXISTS paris_immobilisations_db;
 USE paris_immobilisations_db;
 
--- (Removed) generic `paris_dataset` table: not used by this project.
--- The ETL writes directly to `immobilisations_amortissements`.
-
 -- Table structurée pour Immobilisations - Etat des Amortissements
 CREATE TABLE IF NOT EXISTS immobilisations_amortissements (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
