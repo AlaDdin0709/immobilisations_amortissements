@@ -193,12 +193,6 @@ immobilisations_amortissements/
   - Nombre d'Acquisitions par Mois/Année
   - Amortissement Cumulé
 
-### Style Visuel
-
-**Thème Principal** :
-- Sidebar : Gradient bleu foncé (#1e3a8a → #1e40af)
-- Typographie : Titres noirs, texte gris (#475569)
-
 ---
 
 ## 🚀 Installation et Démarrage
@@ -288,8 +282,6 @@ Docker Compose gère automatiquement les dépendances :
 | **X. Dev/Prod Parity** | ✅ | Docker garantit environnements identiques |
 | **XI. Logs** | ✅ | Logs stdout/stderr, pas de centralisation externe |
 | **XII. Admin Processes** | ✅ | Scripts run-init.sh, entrypoint.sh pour tâches admin |
-
-**Score Global** : 12/12 (100%) ✅ Production-ready
 
 ---
 
